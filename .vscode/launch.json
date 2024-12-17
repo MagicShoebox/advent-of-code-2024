@@ -1,0 +1,44 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'solve'",
+            "cargo": {
+                "args": [
+                    "build",
+                ],
+                "filter": {
+                    "name": "solve",
+                    "kind": "bin"
+                }
+            },
+            "env": {
+                "RUST_BACKTRACE": "1"
+            },
+            "args": [
+                "${input:day}",
+                "${input:filename}"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+    ],
+    "inputs": [{
+        "id": "day",
+        "description": "The Advent of Code day to solve.",
+        "type": "promptString",
+        "default": "1"
+    }, {
+        "id": "filename",
+        "description": "The puzzle input to use.",
+        "type": "promptString",
+        // TODO: Replace with ${relativeFile} once
+        // https://github.com/microsoft/vscode/issues/172099
+        // is fixed
+        "default": "${file}",
+    }]
+}
