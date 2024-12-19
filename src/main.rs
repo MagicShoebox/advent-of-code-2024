@@ -7,7 +7,10 @@ use std::{env, fmt, fs, io, num::ParseIntError, process};
 // is fixed.
 type ParseDayError = ParseIntError;
 
-const DAYS: [fn(&str) -> SolveResult; 1] = [day01];
+const DAYS: [fn(&str) -> SolveResult; 2] = [
+    day01,
+    day02
+];
 
 fn main() {
     let args: Vec<String> = env::args().collect();

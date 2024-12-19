@@ -7,4 +7,6 @@ pub type SolveResult = Result<(String, String), SolveError>;
 pub mod days {
     mod day01;
     pub use day01::solve as day01;
+    mod day02;
+    pub use day02::solve as day02;
 }
