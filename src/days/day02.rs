@@ -2,39 +2,79 @@ use std::iter;
 
 use crate::SolveResult;
 
-type Report = Vec<u32>;
-
 pub fn solve(input: &str) -> SolveResult {
     let reports = parse(input);
-    Ok((part1(reports), part2()))
+    let report_diffs: Vec<Vec<i32>> = reports.iter().map(level_diffs).collect();
+    Ok((part1(&report_diffs), part2(&report_diffs)))
 }
 
-fn parse(input: &str) -> Vec<Report> {
+fn parse(input: &str) -> Vec<Vec<u32>> {
     input
         .lines()
-        .map(|line| line
-            .split_whitespace()
-            .filter_map(|x| x.parse().ok())
-            .collect())
+        .map(|line| {
+            line.split_whitespace()
+                .filter_map(|x| x.parse().ok())
+                .collect()
+        })
         .collect()
 }
 
-fn part1(reports: Vec<Report>) -> String {
-    reports
+fn level_diffs(report: &Vec<u32>) -> Vec<i32> {
+    iter::zip(report, &report[1..])
+        .map(|(&a, &b)| (a as i32) - (b as i32))
+        .collect()
+}
+
+fn part1(report_diffs: &Vec<Vec<i32>>) -> String {
+    report_diffs
         .iter()
-        .filter(|r| is_safe(*r))
+        .flat_map(|x| analyze(x))
         .count()
         .to_string()
 }
 
-fn is_safe(report: &Report) -> bool {
-    let diffs: Vec<i32> = iter::zip(report, &report[1..])
-        .map(|(&a, &b)| (a as i32) - (b as i32))
-        .collect();
-    diffs.iter().all(|&x| x > 0 && x < 4)
-    || diffs.iter().all(|&x| x > -4 && x < 0)
+fn analyze(diffs: &[i32]) -> Result<(), usize> {
+    let increasing = diffs.first().unwrap_or(&0).signum();
+    for (i, &x) in diffs.iter().enumerate() {
+        let diff = increasing * x;
+        if diff < 1 || diff > 3 {
+            return Err(i);
+        }
+    }
+    Ok(())
 }
 
-fn part2() -> String {
-    String::new()
+fn part2(report_diffs: &Vec<Vec<i32>>) -> String {
+    report_diffs
+        .iter()
+        .filter(|x| is_safe_with_dampener(x))
+        .count()
+        .to_string()
+}
+
+fn is_safe_with_dampener(diffs: &[i32]) -> bool {
+    let i = match analyze(diffs) {
+        Ok(()) => return true,
+        Err(i) => i,
+    };
+
+    // Must try removing first when i == 1
+    // for corner case where first two diffs are -,+ or +,-
+    if i == 1 && analyze(&diffs[1..]).is_ok() {
+        return true;
+    }
+
+    let last = diffs.len() - 1;
+    if i == 0 {
+        analyze(&diffs[1..]).or_else(|_| analyze(&combine(&diffs, 1)))
+    } else if i == last {
+        analyze(&diffs[..last]).or_else(|_| analyze(&combine(&diffs, last)))
+    } else {
+        analyze(&combine(&diffs, i)).or_else(|_| analyze(&combine(&diffs, i + 1)))
+    }
+    .is_ok()
+}
+
+fn combine(diffs: &[i32], i: usize) -> Vec<i32> {
+    [&diffs[..i - 1], &[diffs[i - 1] + diffs[i]], &diffs[i + 1..]].concat()
 }
