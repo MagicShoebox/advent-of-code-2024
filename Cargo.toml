@@ -8,3 +8,4 @@ name = "solve"
 path = "src/main.rs"
 
 [dependencies]
+regex = "1.11.1"

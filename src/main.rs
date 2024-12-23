@@ -1,4 +1,3 @@
-use advent_of_code_2024::days::*;
 use advent_of_code_2024::*;
 use std::{env, fmt, fs, io, num::ParseIntError, process};
 
@@ -6,11 +5,6 @@ use std::{env, fmt, fs, io, num::ParseIntError, process};
 // https://github.com/rust-lang/rust/issues/85576
 // is fixed.
 type ParseDayError = ParseIntError;
-
-const DAYS: [fn(&str) -> SolveResult; 2] = [
-    day01,
-    day02
-];
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -48,11 +42,8 @@ enum DayError {
 }
 
 enum RunError<'a> {
-    FileError {
-        filename: &'a str,
-        error: io::Error
-    },
-    SolveError(SolveError)
+    FileError { filename: &'a str, error: io::Error },
+    SolveError(SolveError),
 }
 
 impl fmt::Display for ConfigError<'_> {
@@ -89,10 +80,8 @@ impl fmt::Display for RunError<'_> {
             RunError::FileError { filename, error } => {
                 write!(f, "Error reading {filename}: ")?;
                 error.fmt(f)
-            },
-            RunError::SolveError(err) => {
-                err.fmt(f)
             }
+            RunError::SolveError(err) => err.fmt(f),
         }
     }
 }
@@ -135,10 +124,10 @@ impl Config<'_> {
 
     fn parse_day(day: &str) -> Result<usize, DayError> {
         let day: usize = day.parse()?;
-        if day == 0 || day > DAYS.len() {
+        if day == 0 || day > DAYS {
             return Err(DayError::OutOfRange {
                 low: 1,
-                high: DAYS.len(),
+                high: DAYS,
                 actual: day,
             });
         }
@@ -148,10 +137,12 @@ impl Config<'_> {
 }
 
 fn run(config: Config) -> Result<(), RunError> {
-    let input = fs::read_to_string(config.filename)
-        .map_err(|error| RunError::FileError { filename: config.filename, error })?;
+    let input = fs::read_to_string(config.filename).map_err(|error| RunError::FileError {
+        filename: config.filename,
+        error,
+    })?;
     println!("Solving day {} with {}", config.day, config.filename);
-    let (part1, part2) = DAYS[config.day - 1](&input)?;
+    let (part1, part2) = solve(config.day, &input)?;
     println!("Part 1: {part1}");
     println!("Part 2: {part2}");
     Ok(())
