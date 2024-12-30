@@ -8,4 +8,5 @@ name = "solve"
 path = "src/main.rs"
 
 [dependencies]
+ndarray = "0.16.1"
 regex = "1.11.1"
