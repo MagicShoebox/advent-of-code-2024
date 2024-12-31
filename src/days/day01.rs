@@ -13,7 +13,7 @@ fn parse(input: &str) -> Result<Columns, SolveError> {
     for line in input.lines() {
         for (i, num) in line.split_whitespace().enumerate() {
             let mut col = cols.get_mut(i);
-            while let None = col {
+            while col.is_none() {
                 cols.push(vec![]);
                 col = cols.get_mut(i);
             }

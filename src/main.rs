@@ -107,7 +107,7 @@ impl From<SolveError> for RunError<'_> {
 impl Config<'_> {
     fn build(args: &[String]) -> Result<Config, ConfigError> {
         const EXPECTED: usize = 2;
-        let program_name = if args.len() > 0 { &args[0] } else { "solve" };
+        let program_name = if !args.is_empty() { &args[0] } else { "solve" };
         if args.len() != EXPECTED + 1 {
             return Err(ConfigError::WrongNumberOfParameters {
                 program_name,

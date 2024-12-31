@@ -25,7 +25,7 @@ fn level_diffs(report: &Vec<u32>) -> Vec<i32> {
         .collect()
 }
 
-fn part1(report_diffs: &Vec<Vec<i32>>) -> String {
+fn part1(report_diffs: &[Vec<i32>]) -> String {
     report_diffs
         .iter()
         .flat_map(|x| analyze(x))
@@ -37,14 +37,14 @@ fn analyze(diffs: &[i32]) -> Result<(), usize> {
     let increasing = diffs.first().unwrap_or(&0).signum();
     for (i, &x) in diffs.iter().enumerate() {
         let diff = increasing * x;
-        if diff < 1 || diff > 3 {
+        if !(1..=3).contains(&diff) {
             return Err(i);
         }
     }
     Ok(())
 }
 
-fn part2(report_diffs: &Vec<Vec<i32>>) -> String {
+fn part2(report_diffs: &[Vec<i32>]) -> String {
     report_diffs
         .iter()
         .filter(|x| is_safe_with_dampener(x))
@@ -66,11 +66,11 @@ fn is_safe_with_dampener(diffs: &[i32]) -> bool {
 
     let last = diffs.len() - 1;
     if i == 0 {
-        analyze(&diffs[1..]).or_else(|_| analyze(&combine(&diffs, 1)))
+        analyze(&diffs[1..]).or_else(|_| analyze(&combine(diffs, 1)))
     } else if i == last {
-        analyze(&diffs[..last]).or_else(|_| analyze(&combine(&diffs, last)))
+        analyze(&diffs[..last]).or_else(|_| analyze(&combine(diffs, last)))
     } else {
-        analyze(&combine(&diffs, i)).or_else(|_| analyze(&combine(&diffs, i + 1)))
+        analyze(&combine(diffs, i)).or_else(|_| analyze(&combine(diffs, i + 1)))
     }
     .is_ok()
 }
