@@ -25,7 +25,7 @@ pub fn solve(day: usize, input: &str) -> SolveResult {
 }
 
 // TODO: Generate via procedural macro
-pub const DAYS: usize = 5;
+pub const DAYS: usize = 6;
 
 mod days {
     pub mod day01;
@@ -33,6 +33,7 @@ mod days {
     pub mod day03;
     pub mod day04;
     pub mod day05;
+    pub mod day06;
 }
 
 const DAY_FNS: [fn(&str) -> SolveResult; DAYS] = [
@@ -41,4 +42,5 @@ const DAY_FNS: [fn(&str) -> SolveResult; DAYS] = [
     day03::solve,
     day04::solve,
     day05::solve,
+    day06::solve,
 ];
