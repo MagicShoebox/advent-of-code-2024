@@ -154,7 +154,7 @@ fn part1(grid: &Grid, vertices: &[(usize, usize)]) -> String {
 }
 
 fn part2(grid: &mut Grid, vertices: &[(usize, usize)]) -> String {
-    let mut loop_count = 0;
+    let mut blocks = HashSet::new();
     let mut dir = Direction::North;
     for (p1, p2) in vertices.iter().zip(vertices[1..].iter()) {
         let r = match dir {
@@ -164,29 +164,31 @@ fn part2(grid: &mut Grid, vertices: &[(usize, usize)]) -> String {
             Direction::West => p2.1+1..p1.1+1,
         };
         for x in r {
-            let (pos, block) = match dir {
-                Direction::North => ((x, p1.1), (x - 1, p1.1)),
-                Direction::South => ((x, p1.1), (x + 1, p1.1)),
-                Direction::East => ((p1.0, x), (p1.0, x + 1)),
-                Direction::West => ((p1.0, x), (p1.0, x - 1)),
+            let block = match dir {
+                Direction::North => (x - 1, p1.1),
+                Direction::South => (x + 1, p1.1),
+                Direction::East => (p1.0, x + 1),
+                Direction::West => (p1.0, x - 1),
             };
-            if block == grid.start {
+            if block == grid.start || blocks.contains(&block) {
                 continue;
             }
             grid.rows.entry(block.0).or_default().insert(block.1);
             grid.cols.entry(block.1).or_default().insert(block.0);
-            if check_loop(grid, pos, dir) {
-                loop_count += 1;
+            if check_loop(grid) {
+                blocks.insert(block);
             }
             grid.rows.get_mut(&block.0).map(|v| v.remove(&block.1));
             grid.cols.get_mut(&block.1).map(|v| v.remove(&block.0));
         }
         dir = dir.turn();
     }
-    loop_count.to_string()
+    blocks.len().to_string()
 }
 
-fn check_loop(grid: &Grid, mut pos: (usize, usize), mut dir: Direction) -> bool {
+fn check_loop(grid: &Grid) -> bool {
+    let mut pos = grid.start;
+    let mut dir = Direction::North;
     let mut loop_set = HashSet::new();
     loop {
         match calc_dest(grid, &pos, &dir) {
