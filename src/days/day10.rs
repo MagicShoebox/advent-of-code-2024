@@ -1,50 +1,7 @@
-use std::{collections::HashSet, iter};
+use std::collections::HashSet;
 
-use crate::{Error, SolveError, SolveResult};
-use ndarray::{prelude::*, IntoDimension, NdIndex};
-
-trait ArrayExt<D, I>
-where
-    I: NdIndex<D>,
-{
-    type Output;
-    fn neighbors(&self, ix: I) -> impl Iterator<Item = Self::Output>;
-}
-
-impl<A, D, I> ArrayExt<D, I> for Array<A, D>
-where
-    D: Dimension,
-    I: NdIndex<D> + IntoDimension,
-    <I as IntoDimension>::Dim: NdIndex<D>,
-{
-    type Output = <I as IntoDimension>::Dim;
-    fn neighbors(&self, ix: I) -> impl Iterator<Item = Self::Output> {
-        let mut n = 0;
-        let ix = ix.into_dimension();
-        iter::from_fn(move || loop {
-            let i = n / 2;
-            if i >= self.ndim() {
-                return None;
-            }
-            if n % 2 == 0 {
-                if ix[i] > 0 {
-                    n += 1;
-                    let mut nghbr = ix.clone();
-                    nghbr[i] -= 1;
-                    return Some(nghbr);
-                }
-            } else {
-                if ix[i] + 1 < self.shape()[i] {
-                    n += 1;
-                    let mut nghbr = ix.clone();
-                    nghbr[i] += 1;
-                    return Some(nghbr);
-                }
-            }
-            n += 1;
-        })
-    }
-}
+use crate::{util::grid::ArrayExt, Error, SolveError, SolveResult};
+use ndarray::{prelude::*, IntoDimension};
 
 pub fn solve(input: &str) -> SolveResult {
     let top_map = parse(input)?;

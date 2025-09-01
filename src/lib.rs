@@ -24,6 +24,10 @@ pub fn solve(day: usize, input: &str) -> SolveResult {
     DAY_FNS[day - 1](input)
 }
 
+mod util {
+    pub mod grid;
+}
+
 // TODO: Generate via procedural macro
 pub const DAYS: usize = 11;
 
