@@ -103,7 +103,7 @@ fn expand_warehouse(warehouse: Warehouse) -> Warehouse {
         .collect()
 }
 
-fn display(warehouse: &Warehouse, mve: Option<&Move>) {
+fn _display(warehouse: &Warehouse, mve: Option<&Move>) {
     let max_row = warehouse.iter().map(|item| item.position.0).max().unwrap();
     let max_col = warehouse.iter().map(|item| item.position.1).max().unwrap();
     let mut buffer = Array2::from_elem((max_row + 1, max_col + 1), '.');
@@ -130,10 +130,10 @@ fn display(warehouse: &Warehouse, mve: Option<&Move>) {
 }
 
 fn move_and_score(mut warehouse: Warehouse, moves: &[Move]) -> String {
-    //display(&warehouse, None);
+    //_display(&warehouse, None);
     for mve in moves {
         apply_move(&mut warehouse, mve);
-        //display(&warehouse, Some(mve));
+        //_display(&warehouse, Some(mve));
     }
     warehouse
         .into_iter()
