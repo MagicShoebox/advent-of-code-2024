@@ -1,6 +1,6 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
+    collections::{BinaryHeap, HashMap, HashSet},
 };
 
 use ndarray::Array2;
@@ -58,11 +58,13 @@ impl Position {
     }
 }
 
+type PathMap = HashMap<Position, (usize, Vec<Position>)>;
 type Maze = Array2<MazePoint>;
 
 pub fn solve(input: &str) -> SolveResult {
     let maze = parse(input)?;
-    Ok((part1(&maze), String::new()))
+    let (path_map, end) = navigate(&maze);
+    Ok((part1(&path_map, end), part2(&path_map, end)))
 }
 
 fn parse(input: &str) -> Result<Maze, SolveError> {
@@ -77,7 +79,22 @@ fn parse(input: &str) -> Result<Maze, SolveError> {
     Ok(maze)
 }
 
-fn part1(maze: &Maze) -> String {
+fn part1(path_map: &PathMap, end: (usize, usize)) -> String {
+    path_map[&Position(end, Direction::East)].0.to_string()
+}
+
+fn part2(path_map: &PathMap, end: (usize, usize)) -> String {
+    let mut tiles = HashSet::new();
+    let mut stack = vec![Position(end, Direction::East)];
+    while let Some(current) = stack.pop() {
+        tiles.insert(current.0);
+        stack.extend(&path_map[&current].1);
+    }
+
+    tiles.len().to_string()
+}
+
+fn navigate(maze: &Maze) -> (PathMap, (usize, usize)) {
     let start = maze
         .indexed_iter()
         .find(|(_, x)| **x == MazePoint::Start)
@@ -88,15 +105,22 @@ fn part1(maze: &Maze) -> String {
         .find(|(_, x)| **x == MazePoint::End)
         .map(|(i, _)| i)
         .unwrap();
-    let mut best_score = HashMap::new();
+    let mut path_map = HashMap::new();
     let mut priority_queue = BinaryHeap::new();
     let start_position = Position(start, Direction::East);
-    best_score.insert(start_position, 0);
+    path_map.insert(start_position, (0, vec![]));
     priority_queue.push(Reverse((0, start_position)));
     while let Some(Reverse((_, position))) = priority_queue.pop() {
-        let score = best_score[&position];
+        let (score, _) = path_map[&position];
         if position.0 == end {
-            return score.to_string();
+            if position.1 != Direction::East {
+                path_map
+                    .entry(Position(position.0, Direction::East))
+                    .or_insert((score, vec![]))
+                    .1
+                    .push(position);
+            }
+            continue;
         }
         let nghbrs = [
             (score + 1, position.forward()),
@@ -107,14 +131,18 @@ fn part1(maze: &Maze) -> String {
             if maze[pos_n.0] == MazePoint::Wall {
                 continue;
             }
-            match best_score.get_mut(&pos_n) {
-                Some(ex) if *ex > s => {
-                    *ex = s;
+            match path_map.get_mut(&pos_n) {
+                Some((best, path)) if *best == s => {
+                    path.push(position);
+                }
+                Some((best, path)) if *best > s => {
+                    *best = s;
+                    *path = vec![position];
                     let s = s + pos_n.dist_from(end);
                     priority_queue.push(Reverse((s, pos_n)));
                 }
                 None => {
-                    best_score.insert(pos_n, s);
+                    path_map.insert(pos_n, (s, vec![position]));
                     let s = s + pos_n.dist_from(end);
                     priority_queue.push(Reverse((s, pos_n)));
                 }
@@ -123,5 +151,5 @@ fn part1(maze: &Maze) -> String {
         }
     }
 
-    "No path to end found".to_string()
+    return (path_map, end);
 }
