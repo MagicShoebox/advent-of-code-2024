@@ -34,9 +34,8 @@ impl<A, D, I> ArrayExt<D, I> for Array<A, D>
 where
     D: Dimension,
     I: NdIndex<D> + IntoDimension,
-    <I as IntoDimension>::Dim: NdIndex<D>,
 {
-    type Output = <I as IntoDimension>::Dim;
+    type Output = <<I as IntoDimension>::Dim as Dimension>::Pattern;
     fn neighbors(&self, ix: I) -> impl Iterator<Item = Self::Output> {
         let mut n = 0;
         let ix = ix.into_dimension();
@@ -50,14 +49,14 @@ where
                     n += 1;
                     let mut nghbr = ix.clone();
                     nghbr[i] -= 1;
-                    return Some(nghbr);
+                    return Some(nghbr.into_pattern());
                 }
             } else {
                 if ix[i] + 1 < self.shape()[i] {
                     n += 1;
                     let mut nghbr = ix.clone();
                     nghbr[i] += 1;
-                    return Some(nghbr);
+                    return Some(nghbr.into_pattern());
                 }
             }
             n += 1;

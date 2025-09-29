@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{util::grid::ArrayExt, Error, SolveError, SolveResult};
-use ndarray::{prelude::*, IntoDimension};
+use ndarray::prelude::*;
 
 pub fn solve(input: &str) -> SolveResult {
     let top_map = parse(input)?;
@@ -39,7 +39,7 @@ fn part1(top_map: &Array2<u32>) -> String {
     let mut current = HashSet::new();
     for (ix, _) in level9 {
         flood_map[ix] = HashSet::from([ix]);
-        current.insert(ix.into_dimension());
+        current.insert(ix);
     }
 
     let mut next = HashSet::new();
@@ -73,7 +73,7 @@ fn part2(top_map: &Array2<u32>) -> String {
     let mut current = HashSet::new();
     for (ix, _) in level9 {
         flood_map[ix] = 1;
-        current.insert(ix.into_dimension());
+        current.insert(ix);
     }
 
     let mut next = HashSet::new();
