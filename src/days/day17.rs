@@ -1,41 +1,52 @@
+use std::{
+    cmp::Reverse,
+    collections::{BinaryHeap, HashSet},
+};
+
 use regex::Regex;
 
 use crate::{Error, SolveError, SolveResult};
 
+type Program = Vec<Instruction>;
+
 #[derive(Default)]
-struct Computer {
-    registers: [i64; 3],
-    program: Vec<u8>,
+struct State {
+    registers: [u64; 3],
     instruction_pointer: usize,
     output: Vec<u8>,
 }
 
-impl Computer {
-    fn run(&mut self) {
-        while let Some([opcode, operand]) = self
-            .program
-            .get(self.instruction_pointer..=self.instruction_pointer + 1)
-        {
-            if self.execute(Instruction::from(*opcode, *operand)) {
-                self.instruction_pointer += 2;
+impl State {
+    fn run(&mut self, program: &Program, reg_a: u64) {
+        self.registers[Register::A as usize] = reg_a;
+        self.registers[Register::B as usize] = 0;
+        self.registers[Register::C as usize] = 0;
+        self.instruction_pointer = 0;
+        self.output.clear();
+        while let Some(instruction) = program.get(self.instruction_pointer) {
+            if self.execute(instruction) {
+                self.instruction_pointer += 1;
             }
         }
     }
 
-    fn execute(&mut self, instr: Instruction) -> bool {
+    fn execute(&mut self, instr: &Instruction) -> bool {
         match instr {
             Instruction::Adv(operand) => {
-                self.registers[Register::A as usize] /= 2_i64.pow(operand.value(self) as u32)
+                self.registers[Register::A as usize] /= 2_u64.pow(operand.value(self) as u32)
             }
             Instruction::Bxl(operand) => {
-                self.registers[Register::B as usize] ^= operand as i64;
+                self.registers[Register::B as usize] ^= *operand as u64;
             }
             Instruction::Bst(operand) => {
                 self.registers[Register::B as usize] = operand.value(self) % 8
             }
             Instruction::Jnz(operand) => {
+                if operand % 2 != 0 {
+                    panic!("Jump operand must be multiple of 2")
+                }
                 if self.registers[Register::A as usize] != 0 {
-                    self.instruction_pointer = operand as usize;
+                    self.instruction_pointer = *operand as usize / 2;
                     return false;
                 }
             }
@@ -45,11 +56,11 @@ impl Computer {
             Instruction::Out(operand) => self.output.push((operand.value(self) % 8) as u8),
             Instruction::Bdv(operand) => {
                 self.registers[Register::B as usize] =
-                    self.registers[Register::A as usize] / 2_i64.pow(operand.value(self) as u32)
+                    self.registers[Register::A as usize] / 2_u64.pow(operand.value(self) as u32)
             }
             Instruction::Cdv(operand) => {
                 self.registers[Register::C as usize] =
-                    self.registers[Register::A as usize] / 2_i64.pow(operand.value(self) as u32)
+                    self.registers[Register::A as usize] / 2_u64.pow(operand.value(self) as u32)
             }
         }
         true
@@ -65,13 +76,13 @@ enum Register {
 }
 
 trait Operand {
-    fn value(&self, computer: &Computer) -> i64;
+    fn value(&self, computer: &State) -> u64;
 }
 
 type LiteralOperand = u8;
 impl Operand for LiteralOperand {
-    fn value(&self, _: &Computer) -> i64 {
-        *self as i64
+    fn value(&self, _: &State) -> u64 {
+        *self as u64
     }
 }
 
@@ -92,9 +103,9 @@ impl ComboOperand {
     }
 }
 impl Operand for ComboOperand {
-    fn value(&self, computer: &Computer) -> i64 {
+    fn value(&self, computer: &State) -> u64 {
         match self {
-            ComboOperand::Literal(v) => *v as i64,
+            ComboOperand::Literal(v) => *v as u64,
             ComboOperand::Register(r) => computer.registers[*r as usize],
         }
     }
@@ -128,42 +139,45 @@ impl Instruction {
 }
 
 pub fn solve(input: &str) -> SolveResult {
-    let mut computer = parse(input)?;
-    computer.run();
-    Ok((part1(&computer), part2()))
+    let (raw_program, reg_a) = parse(input)?;
+    let program = raw_program
+        .chunks_exact(2)
+        .map(|c| Instruction::from(c[0], c[1]))
+        .collect();
+
+    Ok((part1(&program, reg_a), part2(&program, &raw_program)))
 }
 
-fn parse(input: &str) -> Result<Computer, SolveError> {
-    let mut computer = Computer::default();
+fn parse(input: &str) -> Result<(Vec<u8>, u64), SolveError> {
     let blank = Regex::new(r"\r?\n\r?\n")?;
     if let [registers, program] = blank.splitn(input, 2).collect::<Vec<_>>()[..] {
-        let re = Regex::new(r"Register\s*(\w):\s*(\d+)")?;
-        for register in re.captures_iter(registers) {
-            let (_, [r, v]) = register.extract();
-            match r {
-                "A" => computer.registers[Register::A as usize] = v.parse()?,
-                "B" => computer.registers[Register::B as usize] = v.parse()?,
-                "C" => computer.registers[Register::C as usize] = v.parse()?,
-                _ => {}
-            };
-        }
+        let re = Regex::new(r"Register\s*A:\s*(\d+)")?;
+        let reg_a = re
+            .captures(registers)
+            .ok_or(Error::InputError("Couldn't find register A"))?;
+        let (_, [reg_a]) = reg_a.extract();
+        let reg_a = reg_a.parse()?;
+
         let re = Regex::new(r"Program:\s*([,\d]+)")?;
-        let program = re
+        let raw_program = re
             .captures(program)
             .ok_or(Error::InputError("Couldn't parse program"))?;
-        let (_, [program]) = program.extract();
-        computer.program = program
+        let (_, [raw_program]) = raw_program.extract();
+        let raw_program = raw_program
             .split(",")
             .map(str::parse)
             .collect::<Result<_, _>>()?;
-        Ok(computer)
+
+        Ok((raw_program, reg_a))
     } else {
         Err(Error::InputError("Couldn't find blank line between registers and program").into())
     }
 }
 
-fn part1(computer: &Computer) -> String {
-    computer
+fn part1(program: &Program, reg_a: u64) -> String {
+    let mut state = State::default();
+    state.run(program, reg_a);
+    state
         .output
         .iter()
         .map(u8::to_string)
@@ -172,6 +186,35 @@ fn part1(computer: &Computer) -> String {
         .to_string()
 }
 
-fn part2() -> String {
-    String::new()
+fn part2(program: &Program, target: &Vec<u8>) -> String {
+    let mut checked: HashSet<u64> = HashSet::new();
+    let mut priority_queue = BinaryHeap::new();
+    priority_queue.push(Reverse((usize::MAX, 0)));
+    while let Some(Reverse((s, reg_a))) = priority_queue.pop() {
+        if s == 0 {
+            return reg_a.to_string();
+        }
+        let neighbors = (0..=63)
+            .map(|i| reg_a ^ (1 << i))
+            .filter(|x| !checked.contains(x))
+            .collect::<Vec<_>>();
+        checked.extend(neighbors.iter().copied());
+        priority_queue.extend(
+            neighbors
+                .into_iter()
+                .map(|x| Reverse((score(program, target, x), x))),
+        );
+    }
+    "Not found!".to_string()
+}
+
+fn score(program: &Program, target: &Vec<u8>, reg_a: u64) -> usize {
+    let mut state = State::default();
+    state.run(program, reg_a);
+    10 * target.len().abs_diff(state.output.len())
+        + target
+            .iter()
+            .zip(state.output)
+            .map(|(x, y)| x.abs_diff(y) as usize)
+            .sum::<usize>()
 }
